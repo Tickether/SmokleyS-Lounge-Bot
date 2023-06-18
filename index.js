@@ -46,6 +46,11 @@ const checkMember = async (address) => {
 }
 
 
+//delay 
+function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // fetch opensea bio
 async function fetchOpensea(address) {
     ///header with opensea apiKey
@@ -117,7 +122,7 @@ function generateCode() {
 }
 
 const verifyAccess = new ButtonBuilder()
-    .setCustomId('verify')
+    .setCustomId('verifyAccess')
     .setLabel('Verify Access')
     .setStyle(ButtonStyle.Danger)
 ;
@@ -155,10 +160,52 @@ client.once(Events.ClientReady, event => {
 	console.log(`Ready! Logged in as ${event.user.tag}`);
 });
 
+// When the client is ready, run this code (only once every 12hrs)
+client.on(Events.ClientReady, event => {
+    //get member list and remove/add based on expirry
+});
+
 client.on(Events.InteractionCreate, async interaction => {
+    // constant for use
+    const Member = interaction.member
+    const SmokleySRole = interaction.guild.roles.cache.get('1119792106144276510')
+    const LoungeRole = interaction.guild.roles.cache.get('1119792517299306546')
+
 	//show wallet submission modal
-	if (interaction.isButton() && interaction.customId === 'verify') {
-		await interaction.showModal(walletModal);
+	if (interaction.isButton() && interaction.customId === 'verifyAccess') {
+        
+        if ( (Member.roles.cache.has('1119792517299306546'))  || (Member.roles.cache.has('1119792106144276510')) ) {
+            // return some messa
+            //address & token from db
+		    const addressFromDB = '0xF7B083022560C6b7FD0a758A5A1edD47eA87C2bC'
+            const tokenFromDB = '0'
+            // check user is on active sub
+            let userOf = await SmokleySLoungeContract.userOf(tokenFromDB)
+            console.log(userOf);
+            if (userOf === ethers.ZeroAddress) {
+                await interaction.reply({ embeds: [memberNotActiveEmbed], ephemeral: true })
+            } 
+            else if (userOf === addressFromDB) {
+                // check expiry of sub
+                let userExpires = await SmokleySLoungeContract.userExpires(tokenFromDB)
+                userExpires = Number(userExpires)
+                userExpires = new Date(userExpires * 1000);
+                userExpires = userExpires.toUTCString()
+                console.log(userExpires);
+                const memberActiveEmbed = new EmbedBuilder()
+                    .setColor(0x0099FF)
+                    .setTitle('Lounge Member!')
+                    .setDescription(`The Bouncer Bot confirms Membership to SmokleyS Lounge! Congratulations, You have full unlimited access to SmokleyS Lounge`)
+                    .addFields(
+                        { name: 'Next Steps', value: `Enjoy your Experiece at the Lounge! Your Membership expires ${userExpires}, Remember to keep your membership active!!` },
+                    )
+                    .setFooter({ text: 'Powered by SmokleyS', iconURL: 'https://i.imgur.com/CF9LXqj.png' })
+                ;
+                await interaction.reply({ embeds: [memberActiveEmbed], ephemeral: true })
+            }
+        } else {
+            await interaction.showModal(walletModal);
+        }
 	}
 
     //after wallet submit conditions 
@@ -189,7 +236,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 let nameNow = await fetchOpensea(address)
                 let dateNow = Date.now()
                 
-                const timeLimit = Date.now() + 10000; // 6 minutes in milliseconds
+                const timeLimit = Date.now() + 360000; // 6 minutes in milliseconds
                 console.log(timeLimit)
                 /*
                 while (!nameNow.includes(code) && dateNow < timeLimit ) {
@@ -198,9 +245,6 @@ client.on(Events.InteractionCreate, async interaction => {
                     console.log(nameNow)
                 }
                 */
-                function delay(ms) {
-                    return new Promise((resolve) => setTimeout(resolve, ms));
-                }
                 do {
                     nameNow = await fetchOpensea(address);
                     dateNow = Date.now();
@@ -214,18 +258,24 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (!nameNow.includes(code)) {
                     await interaction.followUp({ embeds: [errTimeoutEmbed], ephemeral: true })
                 } 
-                    else if (nameNow.includes(code)) {
+                else if (nameNow.includes(code)) {
+                    // add wallet addres to user on db
+
+                    // give limted role
+                    Member.roles.add(SmokleySRole);
+
                     // check user is on active sub
                     let userOf = await SmokleySLoungeContract.userOf(memberCheck[0].tokenId)
                     console.log(userOf);
                     if (userOf === ethers.ZeroAddress) {
                         await interaction.followUp({ embeds: [memberNotActiveEmbed], ephemeral: true })
-                        // limted role
                     } 
                     else if (userOf === address){
                         // check expiry of sub
                         let userExpires = await SmokleySLoungeContract.userExpires(memberCheck[0].tokenId)
                         userExpires = Number(userExpires)
+                        userExpires = new Date(userExpires * 1000)
+                        userExpires = userExpires.toUTCString()
                         console.log(userExpires);
                         const memberActiveEmbed = new EmbedBuilder()
                             .setColor(0x0099FF)
@@ -236,8 +286,10 @@ client.on(Events.InteractionCreate, async interaction => {
                             )
                             .setFooter({ text: 'Powered by SmokleyS', iconURL: 'https://i.imgur.com/CF9LXqj.png' })
                         ;
-                        await interaction.followUp({ embeds: [memberActiveEmbed], ephemeral: true })
                         //give luounge role
+                        Member.roles.add(LoungeRole)
+                        await interaction.followUp({ embeds: [memberActiveEmbed], ephemeral: true })
+                        
                     }
                     
                 }
