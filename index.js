@@ -6,7 +6,11 @@ const axios = require('axios');
 const fs = require('fs');
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMembers
+    ] 
+});
 
 // Replace YOUR_PROVIDER with the URL of a JSON-RPC provider
 
@@ -52,7 +56,7 @@ function delay(ms) {
 }
 
 // fetch opensea bio
-async function fetchOpensea(address) {
+const fetchOpensea = async (address) => {
     ///header with opensea apiKey
     const options = {
         method: 'GET',
@@ -65,6 +69,50 @@ async function fetchOpensea(address) {
         return data.username;
     } catch (error) {
         console.error(error);
+    }
+}
+
+// fetch LoungeMembers list 
+const fetchLoungeMembers = async () => {
+    
+    try {
+        const LoungeMembers = await axios.get('http://localhost:8000/api/SmokleySLounge/');
+        return LoungeMembers.data
+    } catch(err) {
+        console.log(err);
+    }
+}
+
+// fetch LoungeMember
+const fetchLoungeMember = async (discordID) => {
+    
+    try {
+        const LoungeMember = await axios.get(`http://localhost:8000/api/SmokleySLounge/${discordID}`);
+        return LoungeMember.data
+    } catch(err) {
+        console.log(err);
+    }
+}
+
+// add new LoungeMember
+const addLoungeMember = async (memberData) => {
+    
+    try {
+        const LoungeMemberAdd = await axios.post('http://localhost:8000/api/SmokleySLounge/', memberData);
+        return LoungeMemberAdd.data
+    } catch(err) {
+        console.log(err);
+    }
+}
+
+// update LoungeMember 
+const updateLoungeMember = async (discordID, memberData) => {
+    
+    try {
+        const LoungeMemberUpate = await axios.put(`http://localhost:8000/api/SmokleySLounge/${discordID}`, memberData);
+        return LoungeMemberUpate.data
+    } catch(err) {
+        console.log(err);
     }
 }
 
@@ -108,6 +156,15 @@ const memberNotActiveEmbed = new EmbedBuilder()
 	)
     .setFooter({ text: 'Powered by SmokleyS', iconURL: 'https://i.imgur.com/CF9LXqj.png' })
 ;
+const loungeMemberOutsideEmbed = new EmbedBuilder()
+    .setColor(0x0099FF)
+	.setTitle('Lounge Member!')
+	.setDescription(`Your not supposed to be here!..Bouncer Bot will let you in on its next rounds!! We Apologize for the inconvienient interruption in your Experince!`)
+    .addFields(
+		{ name: 'Next Steps', value: 'Activate your membership with a month or few & wider access to the Lounge will be Granted' },
+	)
+    .setFooter({ text: 'Powered by SmokleyS', iconURL: 'https://i.imgur.com/CF9LXqj.png' })
+;
 
 const verifyIsWalletEmbed = new EmbedBuilder()
     .setColor(0x0099FF)
@@ -116,7 +173,7 @@ const verifyIsWalletEmbed = new EmbedBuilder()
 ;
 
 // Generate code
-function generateCode() {
+const generateCode = () => {
     const hex = Math.random().toString(36).substring(7);
     return hex;
 }
@@ -161,8 +218,74 @@ client.once(Events.ClientReady, event => {
 });
 
 // When the client is ready, run this code (only once every 12hrs)
-client.on(Events.ClientReady, event => {
+client.on(Events.ClientReady, async event => {
+    
+    
+    
+    
     //get member list and remove/add based on expirry
+    const manageMembers = async () => {
+        // const for use
+        const guild = await event.guilds.fetch('1118860859586912326');
+        const LoungeRole = guild.roles.cache.get('1119792517299306546')
+        const SmokleySRole = guild.roles.cache.get('1119792106144276510')
+        const loungeMembers = await fetchLoungeMembers()
+
+        if (loungeMembers.length >= 1 ) {
+            // do checks for each item in Lounge Members
+            for (let i = loungeMembers.length-1; i >= 0; i--){
+                const loungeMember = loungeMembers[i]
+                const Member = await guild.members.fetch(loungeMember.discordID)
+                const timeStamp = Date.now();
+                console.log(Member.roles.cache.has('1119792517299306546'))
+                //console.log(userExpires)
+                console.log(timeStamp)
+
+                let userExpires = await SmokleySLoungeContract.userExpires(loungeMember.tokenID)
+                userExpires = Number(userExpires)
+                userExpires = (userExpires * 1000)
+                console.log(userExpires)
+                
+                if (userExpires < timeStamp) {
+                    // check if role them remove role
+                    if (Member.roles.cache.has('1119792517299306546')) {
+                        
+                        //take luounge role
+                        Member.roles.remove(LoungeRole)
+                        console.log('removed LOUNGE')
+                        //give SmokleyS role
+                        Member.roles.add(SmokleySRole)
+                        console.log('added SmokleyS')
+                        // send embed about role removed
+                        return;
+                    }
+                } else if( userExpires > timeStamp) {
+                    if (Member.roles.cache.has('1119792106144276510')) {
+                        
+                        //give luounge role
+                        Member.roles.add(LoungeRole)
+                        console.log('added LOUNGE')
+                        //take SmokleyS role
+                        Member.roles.remove(SmokleySRole)
+                        console.log('removed SmokleyS')
+                        // send embed about role added again
+                        return;
+                    }
+                    // checks if time remaing is less than 24hrs 
+                    const dayInMilliSecs = 86400000
+                    const timeLeft = userExpires - timeStamp
+                    if (dayInMilliSecs > timeLeft) {
+                        // send reminder embed with time left
+                    }
+                    console.log('just another run through the Lounge, nothing to see here...')
+                }
+            }
+        } 
+        else {
+            console.log('no users wallets info')
+        }
+    }
+    setInterval(manageMembers, 60000)
 });
 
 client.on(Events.InteractionCreate, async interaction => {
@@ -173,25 +296,24 @@ client.on(Events.InteractionCreate, async interaction => {
 
 	//show wallet submission modal
 	if (interaction.isButton() && interaction.customId === 'verifyAccess') {
+        //address & token from db
+        const loungeMember = await fetchLoungeMember(Member.user.id)
+        const addressFromDB = loungeMember.wallet
+        const tokenFromDB = loungeMember.tokenID
         
-        if ( (Member.roles.cache.has('1119792517299306546'))  || (Member.roles.cache.has('1119792106144276510')) ) {
-            // return some messa
-            //address & token from db
-		    const addressFromDB = '0xF7B083022560C6b7FD0a758A5A1edD47eA87C2bC'
-            const tokenFromDB = '0'
+        if ( (Member.roles.cache.has('1119792517299306546'))) {
             // check user is on active sub
             let userOf = await SmokleySLoungeContract.userOf(tokenFromDB)
             console.log(userOf);
-            if (userOf === ethers.ZeroAddress) {
-                await interaction.reply({ embeds: [memberNotActiveEmbed], ephemeral: true })
-            } 
-            else if (userOf === addressFromDB) {
-                // check expiry of sub
-                let userExpires = await SmokleySLoungeContract.userExpires(tokenFromDB)
-                userExpires = Number(userExpires)
-                userExpires = new Date(userExpires * 1000);
-                userExpires = userExpires.toUTCString()
-                console.log(userExpires);
+
+            // check expiry of sub
+            let userExpires = await SmokleySLoungeContract.userExpires(tokenFromDB)
+            userExpires = Number(userExpires)
+            userExpires = new Date(userExpires * 1000);
+            userExpires = userExpires.toUTCString()
+            console.log(userExpires);
+
+            if (userOf === addressFromDB) {
                 const memberActiveEmbed = new EmbedBuilder()
                     .setColor(0x0099FF)
                     .setTitle('Lounge Member!')
@@ -201,10 +323,38 @@ client.on(Events.InteractionCreate, async interaction => {
                     )
                     .setFooter({ text: 'Powered by SmokleyS', iconURL: 'https://i.imgur.com/CF9LXqj.png' })
                 ;
-                await interaction.reply({ embeds: [memberActiveEmbed], ephemeral: true })
+                try {
+                    await interaction.reply({ embeds: [memberActiveEmbed], ephemeral: true })
+                } catch (error) {
+                    console.log(error)
+                }
             }
-        } else {
-            await interaction.showModal(walletModal);
+        } 
+        else if ((Member.roles.cache.has('1119792106144276510')) ) {
+            // check user is on active sub
+            let userOf = await SmokleySLoungeContract.userOf(tokenFromDB)
+            console.log(userOf);
+
+            if (userOf === ethers.ZeroAddress) {
+                try {
+                    await interaction.reply({ embeds: [memberNotActiveEmbed], ephemeral: true })
+                } catch (error) {
+                    console.log(error)
+                }
+            }
+            else {
+                // send embed message
+                await interaction.reply({ embeds: [loungeMemberOutsideEmbed], ephemeral: true })
+                console.log('Your not supposed to be here sorry!..Bouncer Bot will let you in on its rounds')
+            }
+        } 
+        else {
+            try {
+                await interaction.showModal(walletModal);
+            } catch (error) {
+                console.log(error)
+            }
+            
         }
 	}
 
@@ -260,14 +410,19 @@ client.on(Events.InteractionCreate, async interaction => {
                 } 
                 else if (nameNow.includes(code)) {
                     // add wallet addres to user on db
-
-                    // give limted role
-                    Member.roles.add(SmokleySRole);
+                    const LoungeMember = {
+                        discordID: Member.user.id,
+                        wallet: address,
+                        tokenID: memberCheck[0].tokenId,
+                    }
+                    await addLoungeMember(LoungeMember)
 
                     // check user is on active sub
                     let userOf = await SmokleySLoungeContract.userOf(memberCheck[0].tokenId)
                     console.log(userOf);
                     if (userOf === ethers.ZeroAddress) {
+                        // give limted role
+                        Member.roles.add(SmokleySRole);
                         await interaction.followUp({ embeds: [memberNotActiveEmbed], ephemeral: true })
                     } 
                     else if (userOf === address){
