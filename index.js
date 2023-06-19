@@ -17,7 +17,7 @@ const client = new Client({ intents: [
 const provider = new ethers.JsonRpcProvider('https://sepolia.infura.io/v3/8231230ce0b44ec29c8682c1e47319f9');
 
 // Replace YOUR_CONTRACT_ADDRESS with the address of the contract
-const SmokleySLoungeAddress = '0x7C2A9525818B0c1589885de370323B1B385224D1';
+const SmokleySLoungeAddress = '0xe0EA5e8Bf175E517A6079716864524BE4a11CaBF';
 
 // Replace YOUR_ABI_FILE with the path to the JSON file containing the ABI
 const abiFile = './SmokleySLounge.json';
@@ -41,7 +41,7 @@ const alchemy = new Alchemy(settings);
 const checkMember = async (address) => {
     
     try {
-        const nfts = await alchemy.nft.getNftsForOwner(address, { contractAddresses: ['0x7C2A9525818B0c1589885de370323B1B385224D1'] });
+        const nfts = await alchemy.nft.getNftsForOwner(address, { contractAddresses: [SmokleySLoungeAddress] });
         console.log('this:', nfts.ownedNfts)
         return nfts.ownedNfts
     } catch(err) {
