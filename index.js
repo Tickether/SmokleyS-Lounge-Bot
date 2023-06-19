@@ -296,12 +296,13 @@ client.on(Events.InteractionCreate, async interaction => {
 
 	//show wallet submission modal
 	if (interaction.isButton() && interaction.customId === 'verifyAccess') {
-        //address & token from db
-        const loungeMember = await fetchLoungeMember(Member.user.id)
-        const addressFromDB = loungeMember.wallet
-        const tokenFromDB = loungeMember.tokenID
+        
         
         if ( (Member.roles.cache.has('1119792517299306546'))) {
+            //address & token from db
+            const loungeMember = await fetchLoungeMember(Member.user.id)
+            const addressFromDB = loungeMember.wallet
+            const tokenFromDB = loungeMember.tokenID
             // check user is on active sub
             let userOf = await SmokleySLoungeContract.userOf(tokenFromDB)
             console.log(userOf);
@@ -331,6 +332,9 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         } 
         else if ((Member.roles.cache.has('1119792106144276510')) ) {
+            //address & token from db
+            const loungeMember = await fetchLoungeMember(Member.user.id)
+            const tokenFromDB = loungeMember.tokenID
             // check user is on active sub
             let userOf = await SmokleySLoungeContract.userOf(tokenFromDB)
             console.log(userOf);
