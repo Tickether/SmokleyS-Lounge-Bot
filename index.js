@@ -76,7 +76,7 @@ const fetchOpensea = async (address) => {
 const fetchLoungeMembers = async () => {
     
     try {
-        const LoungeMembers = await axios.get('http://localhost:8000/api/SmokleySLounge/');
+        const LoungeMembers = await axios.get('https://smokleys-lounge-bot-api.onrender.com/api/SmokleySLounge/');
         return LoungeMembers.data
     } catch(err) {
         console.log(err);
@@ -87,7 +87,7 @@ const fetchLoungeMembers = async () => {
 const fetchLoungeMember = async (discordID) => {
     
     try {
-        const LoungeMember = await axios.get(`http://localhost:8000/api/SmokleySLounge/${discordID}`);
+        const LoungeMember = await axios.get(`https://smokleys-lounge-bot-api.onrender.com/api/SmokleySLounge/${discordID}`);
         return LoungeMember.data
     } catch(err) {
         console.log(err);
@@ -98,7 +98,7 @@ const fetchLoungeMember = async (discordID) => {
 const addLoungeMember = async (memberData) => {
     
     try {
-        const LoungeMemberAdd = await axios.post('http://localhost:8000/api/SmokleySLounge/', memberData);
+        const LoungeMemberAdd = await axios.post('https://smokleys-lounge-bot-api.onrender.com/api/SmokleySLounge/', memberData);
         return LoungeMemberAdd.data
     } catch(err) {
         console.log(err);
@@ -109,7 +109,7 @@ const addLoungeMember = async (memberData) => {
 const updateLoungeMember = async (discordID, memberData) => {
     
     try {
-        const LoungeMemberUpate = await axios.put(`http://localhost:8000/api/SmokleySLounge/${discordID}`, memberData);
+        const LoungeMemberUpate = await axios.put(`https://smokleys-lounge-bot-api.onrender.com/api/SmokleySLounge/${discordID}`, memberData);
         return LoungeMemberUpate.data
     } catch(err) {
         console.log(err);
