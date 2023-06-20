@@ -220,9 +220,6 @@ client.once(Events.ClientReady, event => {
 // When the client is ready, run this code (only once every 12hrs)
 client.on(Events.ClientReady, async event => {
     
-    
-    
-    
     //get member list and remove/add based on expirry
     const manageMembers = async () => {
         // const for use
@@ -383,7 +380,6 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.reply({ embeds: [verifyIsWalletEmbed], ephemeral: true })
             const memberCheck = await checkMember(address)
             if (memberCheck.length === 0) {
-                //await client.channels.cache.get('1118860860434173996').send({ embeds: [errNotMemberEmbed], ephemeral: true });
                 await interaction.followUp({ embeds: [errNotMemberEmbed], ephemeral: true })
             } else {
                 await interaction.followUp({ embeds: [verifyOwnWalletEmbed], ephemeral: true })
@@ -392,13 +388,6 @@ client.on(Events.InteractionCreate, async interaction => {
                 
                 const timeLimit = Date.now() + 360000; // 6 minutes in milliseconds
                 console.log(timeLimit)
-                /*
-                while (!nameNow.includes(code) && dateNow < timeLimit ) {
-                    nameNow = await fetchOpensea(address);
-                    dateNow = Date.now();
-                    console.log(nameNow)
-                }
-                */
                 do {
                     nameNow = await fetchOpensea(address);
                     dateNow = Date.now();
